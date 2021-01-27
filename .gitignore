@@ -13,3 +13,6 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+cmd/infra/log/log.log
+cmd/infra/__debug_bin
+cmd/infra/log/log.log

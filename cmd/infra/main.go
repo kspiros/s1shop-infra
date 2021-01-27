@@ -1,8 +1,9 @@
 package main
 
 import (
-	"infra"
 	"log"
+
+	infra "github.com/kspiros/s1shop-infra"
 
 	"github.com/joho/godotenv"
 )

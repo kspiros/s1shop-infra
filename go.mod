@@ -1,4 +1,4 @@
-module infra
+module github.com/kspiros/s1shop-infra
 
 go 1.15
 
