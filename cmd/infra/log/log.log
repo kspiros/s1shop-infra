@@ -1,4 +1,0 @@
-Error Auth:	2021/01/27 13:00:02 logger.go:20: (InvalidNamespace) Invalid database name: 'C:\S1Infra\s1shop-infra\cmd\infra\__debug_bin'
-Error Auth:	2021/01/27 14:29:11 logger.go:20: (InvalidNamespace) Invalid database name: 'C:\S1Infra\s1shop-infra\cmd\infra\__debug_bin'
-Error Auth:	2021/01/27 14:34:12 logger.go:20: (InvalidNamespace) Invalid database name: 'C:\s1shop\infra\cmd\infra\__debug_bin'
-Error Auth:	2021/01/27 14:38:23 logger.go:20: (InvalidNamespace) Invalid database name: 'C:\s1shop\infra\cmd\infra\__debug_bin'
