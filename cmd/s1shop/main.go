@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 
-	infra "github.com/kspiros/s1shop-infra"
 	"github.com/kspiros/xlib"
 
 	"github.com/joho/godotenv"
@@ -30,7 +29,7 @@ func run() error {
 	defer tidylogger()
 
 	//Create redis
-	_, err = infra.NewMemCash()
+	_, err = xlib.NewMemCash()
 	if err != nil {
 		logger.Fatal(err)
 		return err
