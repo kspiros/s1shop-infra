@@ -4,6 +4,7 @@ import (
 	"log"
 
 	infra "github.com/kspiros/s1shop-infra"
+	"github.com/kspiros/xlib"
 
 	"github.com/joho/godotenv"
 )
@@ -25,30 +26,23 @@ func run() error {
 	//emailServer := infra.NewMailSender("", "", "")
 
 	//Create logger
-	logger, tidylogger := infra.NewLogger()
+	logger, tidylogger := xlib.NewLogger()
 	defer tidylogger()
 
 	//Create redis
-	//memcash, err := infra.NewMemCash()
-	//if err != nil {
-	//	logger.Fatal(err)
-	//	return err
-	//	}
+	_, err = infra.NewMemCash()
+	if err != nil {
+		logger.Fatal(err)
+		return err
+	}
 
 	//Setup db connection
-	dbconn, dbtidy, err := infra.InitDatabase()
+	_, dbtidy, err := xlib.InitDatabase()
 	if err != nil {
 		logger.Fatal(err)
 		return err
 	}
 	defer dbtidy()
-
-	//SetupDB
-	err = infra.SetupDB(dbconn)
-	if err != nil {
-		logger.Fatal(err)
-		return err
-	}
 
 	return nil
 }

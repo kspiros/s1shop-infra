@@ -7,6 +7,7 @@ require (
 	github.com/go-redis/redis/v8 v8.4.11
 	github.com/graphql-go/graphql v0.7.9
 	github.com/joho/godotenv v1.3.0
+	github.com/kspiros/s1shop-infra v0.0.3
 	github.com/twinj/uuid v1.0.0
 	go.mongodb.org/mongo-driver v1.4.5
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9

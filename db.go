@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/x/bsonx"
 )
 
+//DBOptions database options
 type DBOptions struct {
 	Start     int64
 	Offset    int64
@@ -23,11 +23,14 @@ type DBOptions struct {
 
 //IDBConn database interface
 type IDBConn interface {
-	Find(table string, field string, value interface{}, res interface{}) error
-	FindMany(table string, field string, value interface{}, dbopt *DBOptions, res interface{}) error
-	Insert(table string, value interface{}) (primitive.ObjectID, error)
-	Update(table string, data interface{}, field string, value interface{}) (int64, error)
-	Delete(table string, field string, value interface{}) (int64, error)
+	FindOne(table string, sel interface{}, filters map[string]interface{}, res interface{}) error
+	FindMany(table string, sel interface{}, filters map[string]interface{}, dbopt *DBOptions, res interface{}) error
+	InsertOne(table string, document interface{}) (interface{}, error)
+	InsertMany(table string, documents []interface{}) ([]interface{}, error)
+	UpdateOne(table string, filter interface{}, update interface{}) (int64, error)
+	DeleteOne(table string, filter interface{}) (int64, error)
+	DeleteMany(table string, filter interface{}) (int64, error)
+	Aggregate(table string, pipeline interface{}, res interface{}) error
 	CreateUniqueIndex(collection string, keys ...string) error
 }
 
@@ -36,7 +39,7 @@ type dbConn struct {
 	db      *mongo.Database
 }
 
-func (conn *dbConn) FindMany(table string, field string, value interface{}, dbopt *DBOptions, res interface{}) error {
+func (conn *dbConn) FindMany(table string, sel interface{}, filters map[string]interface{}, dbopt *DBOptions, res interface{}) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	opts := &options.FindOptions{}
@@ -44,13 +47,12 @@ func (conn *dbConn) FindMany(table string, field string, value interface{}, dbop
 		opts.Skip = &dbopt.Start
 		opts.Limit = &dbopt.Offset
 	}
-	opts.SetSort(bson.D{{dbopt.Order, dbopt.OrderType}})
-
-	filter := bson.M{}
-	if field != "" {
-		filter = bson.M{field: value}
+	opts.SetSort(bson.D{{Key: dbopt.Order, Value: dbopt.OrderType}})
+	if sel != nil {
+		opts.SetProjection(sel)
 	}
-	cur, err := conn.db.Collection(table).Find(ctx, filter, opts)
+
+	cur, err := conn.db.Collection(table).Find(ctx, filters, opts)
 	if err != nil {
 		return err
 	}
@@ -58,29 +60,41 @@ func (conn *dbConn) FindMany(table string, field string, value interface{}, dbop
 	return cur.All(ctx, res)
 }
 
-func (conn *dbConn) Find(table string, field string, value interface{}, res interface{}) error {
+func (conn *dbConn) FindOne(table string, sel interface{}, filters map[string]interface{}, res interface{}) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-
-	filter := bson.M{field: value}
-	return conn.db.Collection(table).FindOne(ctx, filter).Decode(res)
-}
-
-func (conn *dbConn) Insert(table string, value interface{}) (primitive.ObjectID, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	res, err := conn.db.Collection(table).InsertOne(ctx, value)
-	if err != nil {
-		return primitive.NilObjectID, err
+	opts := &options.FindOneOptions{}
+	if sel != nil {
+		opts.SetProjection(sel)
 	}
-	return res.InsertedID.(primitive.ObjectID), nil
+
+	return conn.db.Collection(table).FindOne(ctx, filters, opts).Decode(res)
 }
 
-func (conn *dbConn) Delete(table string, field string, value interface{}) (int64, error) {
+func (conn *dbConn) InsertMany(table string, documents []interface{}) ([]interface{}, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := conn.db.Collection(table).InsertMany(ctx, documents)
+	if err != nil {
+		return nil, err
+	}
+	return res.InsertedIDs, nil
+}
+
+func (conn *dbConn) InsertOne(table string, document interface{}) (interface{}, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := conn.db.Collection(table).InsertOne(ctx, document)
+	if err != nil {
+		return nil, err
+	}
+	return res.InsertedID, nil
+}
+
+func (conn *dbConn) DeleteOne(table string, filter interface{}) (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	filter := bson.M{field: value}
 	res, err := conn.db.Collection(table).DeleteOne(ctx, filter)
 	if err != nil {
 		return 0, err
@@ -88,27 +102,40 @@ func (conn *dbConn) Delete(table string, field string, value interface{}) (int64
 	return res.DeletedCount, nil
 }
 
-func (conn *dbConn) Update(table string, data interface{}, field string, value interface{}) (int64, error) {
+func (conn *dbConn) DeleteMany(table string, filter interface{}) (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	filter := bson.M{field: value}
+	res, err := conn.db.Collection(table).DeleteMany(ctx, filter)
+	if err != nil {
+		return 0, err
+	}
+	return res.DeletedCount, nil
+}
 
-	pByte, err := bson.Marshal(data)
-	if err != nil {
-		return 0, err
-	}
-	var update bson.M
-	err = bson.Unmarshal(pByte, &update)
-	if err != nil {
-		return 0, err
-	}
-	upd := bson.D{{Key: "$set", Value: update}}
-	res, err := conn.db.Collection(table).UpdateOne(ctx, filter, upd)
+func (conn *dbConn) UpdateOne(table string, filter interface{}, update interface{}) (int64, error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := conn.db.Collection(table).UpdateOne(ctx, filter, update)
 	if err != nil {
 		return 0, err
 	}
 	return res.MatchedCount, nil
+}
+
+func (conn *dbConn) Aggregate(table string, pipeline interface{}, res interface{}) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cur, err := conn.db.Collection(table).Aggregate(ctx, pipeline)
+	defer cur.Close(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	return cur.All(ctx, res)
 }
 
 //CreateUniqueIndex create a unique index
