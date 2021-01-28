@@ -1,4 +1,4 @@
-module github.com/kspiros/s1shop-infra
+module github.com/kspiros/xlib
 
 go 1.15
 

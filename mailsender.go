@@ -1,4 +1,4 @@
-package infra
+package xlib
 
 //IMailSender auto email sender interface
 type IMailSender interface {
