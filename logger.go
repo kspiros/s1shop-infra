@@ -17,6 +17,7 @@ type logger struct {
 }
 
 func (l *logger) Fatal(msg interface{}) {
+	fmt.Println(msg)
 	l.log.Fatal(msg)
 }
 
