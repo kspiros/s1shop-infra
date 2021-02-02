@@ -1,28 +1,50 @@
 package xlib
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"log"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/nats-io/stan.go"
 )
 
+const ACKWAIT = 30 * time.Second
+
 type IBus interface {
+	Publish(subj string, data []byte) error
+	QueueSubscribe(listener func(msg *stan.Msg), subj string, queue string) error
 }
 
-type natsClient struct {
+type stanClient struct {
 	con *stan.Conn
 }
 
-func (nc *natsClient) Publish(subj string, data []byte) error {
+func (sc *stanClient) Publish(subj string, data []byte) error {
+	return (*sc.con).Publish(subj, data)
+
+}
+
+func (sc *stanClient) QueueSubscribe(listener func(msg *stan.Msg), subj string, queue string) error {
+	durable := queue
+	_, err := (*sc.con).QueueSubscribe(subj, queue, listener, stan.DeliverAllAvailable(), stan.SetManualAckMode(), stan.AckWait(ACKWAIT), stan.DurableName(durable))
+	if err != nil {
+		(*sc.con).Close()
+		return err
+	}
+
+	log.Printf("Listening on [%s],  qgroup=[%s] durable=[%s]\n", subj, queue, queue)
 	return nil
 }
 
-func (nc *natsClient) QueueSubscribe(subj string, queue string) {
-
+func randomHex(n int) (string, error) {
+	bytes := make([]byte, n)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
 }
 
 func NewBus() (IBus, func(), error) {
@@ -32,66 +54,20 @@ func NewBus() (IBus, func(), error) {
 		return nil, nil, errors.New("NATS_URL must be defined")
 	}
 
-	clientID := os.Getenv("NATS_CLIENT_ID")
-	if len(dsn) == 0 {
-		return nil, nil, errors.New("NATS_CLIENT_ID must be defined")
-	}
-
 	clusterID := os.Getenv("NATS_CLUSTER_ID")
 	if len(dsn) == 0 {
 		return nil, nil, errors.New("NATS_CLUSTER_ID must be defined")
 	}
 	// Connect to NATS
-	sc, err := stan.Connect(clusterID, clientID, stan.NatsURL(dsn))
+	clientID, _ := randomHex(20)
+
+	sc, err := stan.Connect(clusterID, clientID, stan.NatsURL(dsn),
+		stan.SetConnectionLostHandler(func(_ stan.Conn, reason error) {
+			log.Fatalf("Connection lost, reason: %v", reason)
+		}))
+
 	if err != nil {
-		log.Fatalf("Can't connect: %v.\nMake sure a NATS Streaming Server is running at: %s", err, dsn)
+		return nil, nil, errors.New("Can't connect: Make sure a NATS Streaming Server is running")
 	}
-	defer sc.Close()
-
-	subj := "test subject"
-	msg := []byte("test message")
-
-	ch := make(chan bool)
-	var glock sync.Mutex
-	var guid string
-	acb := func(lguid string, err error) {
-		glock.Lock()
-		log.Printf("Received ACK for guid %s\n", lguid)
-		defer glock.Unlock()
-		if err != nil {
-			log.Fatalf("Error in server ack for guid %s: %v\n", lguid, err)
-		}
-		if lguid != guid {
-			log.Fatalf("Expected a matching guid in ack callback, got %s vs %s\n", lguid, guid)
-		}
-		ch <- true
-	}
-	async := false
-	if !async {
-		err = sc.Publish(subj, msg)
-		if err != nil {
-			log.Fatalf("Error during publish: %v\n", err)
-		}
-		log.Printf("Published [%s] : '%s'\n", subj, msg)
-	} else {
-		glock.Lock()
-		guid, err = sc.PublishAsync(subj, msg, acb)
-		if err != nil {
-			log.Fatalf("Error during async publish: %v\n", err)
-		}
-		glock.Unlock()
-		if guid == "" {
-			log.Fatal("Expected non-empty guid to be returned.")
-		}
-		log.Printf("Published [%s] : '%s' [guid: %s]\n", subj, msg, guid)
-
-		select {
-		case <-ch:
-			break
-		case <-time.After(5 * time.Second):
-			log.Fatal("timeout")
-		}
-
-	}
-	return &natsClient{con: &sc}, func() { sc.Close() }, nil
+	return &stanClient{con: &sc}, func() { sc.Close() }, nil
 }

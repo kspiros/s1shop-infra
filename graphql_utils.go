@@ -35,7 +35,6 @@ func GetObjectIDGraphQLType() *graphql.Scalar {
 			default:
 				return nil
 			}
-			return nil
 		},
 		// ParseLiteral parses GraphQL AST to `bson.ObjectId`.
 		ParseLiteral: func(valueAST ast.Value) interface{} {
