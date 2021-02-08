@@ -199,7 +199,9 @@ func InitDatabase() (IDBConn, func(), error) {
 	}
 
 	// Return disconnect as func to defer in main
-	f := func() { session.Disconnect(ctx) }
+	f := func() {
+		session.Disconnect(ctx)
+	}
 
 	//Ping Database
 	err = session.Ping(ctx, readpref.Primary())

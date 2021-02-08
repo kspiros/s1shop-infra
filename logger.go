@@ -10,6 +10,7 @@ import (
 //ILogger logging interface
 type ILogger interface {
 	Fatal(msg interface{})
+	Close()
 }
 
 type logger struct {
@@ -21,8 +22,12 @@ func (l *logger) Fatal(msg interface{}) {
 	l.log.Fatal(msg)
 }
 
+func (l *logger) Close() {
+	l.Close()
+}
+
 //NewLogger Create Logger to report errors
-func NewLogger() (ILogger, func()) {
+func NewLogger() (ILogger, func(), error) {
 	lp := os.Getenv("LOGGER_FILENAME")
 	if len(lp) == 0 {
 		lp = "./log/log.log"
@@ -34,8 +39,8 @@ func NewLogger() (ILogger, func()) {
 	openLogfile, err := os.OpenFile(lp, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		fmt.Println("Error opening file:", err)
-		os.Exit(1)
+		return nil, nil, err
 	}
 	l := log.New(openLogfile, "Error Auth:\t", log.Ldate|log.Ltime|log.Lshortfile)
-	return &logger{log: l}, func() { openLogfile.Close() }
+	return &logger{log: l}, func() { openLogfile.Close() }, nil
 }

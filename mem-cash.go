@@ -2,6 +2,8 @@ package xlib
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -36,7 +38,8 @@ func NewMemCash() (IMemCash, error) {
 	//Initializing redis
 	dsn := os.Getenv("REDIS_DSN")
 	if len(dsn) == 0 {
-		dsn = "localhost:6379"
+		fmt.Println("REDIS_DSN is not set")
+		return nil, errors.New("REDIS_DSN is not set")
 	}
 	client := redis.NewClient(&redis.Options{
 		Addr: dsn,
@@ -44,6 +47,7 @@ func NewMemCash() (IMemCash, error) {
 	//Ping Redis
 	_, err := client.Ping(context.Background()).Result()
 	if err != nil {
+		fmt.Println("redis: %s", err.Error())
 		return nil, err
 	}
 	return &redisMem{cl: client}, nil
