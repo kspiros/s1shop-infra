@@ -36,7 +36,6 @@ func (sc *ServerConfig) WithBus() *ServerConfig {
 		deferFunc = append(deferFunc, bustidy)
 	}
 	sc.Bus = nc
-	defer bustidy()
 	return sc
 }
 
