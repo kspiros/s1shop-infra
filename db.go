@@ -25,6 +25,8 @@ type DBOptions struct {
 type IDBConn interface {
 	FindOne(table string, sel interface{}, filters map[string]interface{}, res interface{}) error
 	FindMany(table string, sel interface{}, filters map[string]interface{}, dbopt *DBOptions, res interface{}) error
+	FindOneAndUpdate(table string, sel interface{}, filters map[string]interface{}, update interface{}, res interface{}) error
+	FindOneAndDelete(table string, sel interface{}, filter interface{}, res interface{}) error
 	InsertOne(table string, document interface{}) (interface{}, error)
 	InsertMany(table string, documents []interface{}) ([]interface{}, error)
 	UpdateOne(table string, filter interface{}, update interface{}) (int64, error)
@@ -58,6 +60,17 @@ func (conn *dbConn) FindMany(table string, sel interface{}, filters map[string]i
 	}
 
 	return cur.All(ctx, res)
+}
+
+func (conn *dbConn) FindOneAndUpdate(table string, sel interface{}, filters map[string]interface{}, update interface{}, res interface{}) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	opts := &options.FindOneAndUpdateOptions{}
+	if sel != nil {
+		opts.SetProjection(sel)
+	}
+
+	return conn.db.Collection(table).FindOneAndUpdate(ctx, filters, update, opts).Decode(res)
 }
 
 func (conn *dbConn) FindOne(table string, sel interface{}, filters map[string]interface{}, res interface{}) error {
@@ -100,6 +113,17 @@ func (conn *dbConn) DeleteOne(table string, filter interface{}) (int64, error) {
 		return 0, err
 	}
 	return res.DeletedCount, nil
+}
+
+func (conn *dbConn) FindOneAndDelete(table string, sel interface{}, filter interface{}, res interface{}) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	opts := &options.FindOneAndDeleteOptions{}
+	if sel != nil {
+		opts.SetProjection(sel)
+	}
+
+	return conn.db.Collection(table).FindOneAndDelete(ctx, filter, opts).Decode(res)
 }
 
 func (conn *dbConn) DeleteMany(table string, filter interface{}) (int64, error) {
