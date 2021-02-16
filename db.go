@@ -30,6 +30,8 @@ type IDBConn interface {
 	InsertOne(table string, document interface{}) (interface{}, error)
 	InsertMany(table string, documents []interface{}) ([]interface{}, error)
 	UpdateOne(table string, filter interface{}, update interface{}) (int64, error)
+	UpdateMany(table string, filter interface{}, update interface{}) (int64, error)
+	BulkReplace(table string, filters []interface{}, documents []interface{}) (int64, error)
 	DeleteOne(table string, filter interface{}) (int64, error)
 	DeleteMany(table string, filter interface{}) (int64, error)
 	Aggregate(table string, pipeline interface{}, res interface{}) error
@@ -142,6 +144,38 @@ func (conn *dbConn) UpdateOne(table string, filter interface{}, update interface
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	res, err := conn.db.Collection(table).UpdateOne(ctx, filter, update)
+	if err != nil {
+		return 0, err
+	}
+	return res.MatchedCount, nil
+}
+
+func (conn *dbConn) UpdateMany(table string, filter interface{}, update interface{}) (int64, error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := conn.db.Collection(table).UpdateMany(ctx, filter, update)
+	if err != nil {
+		return 0, err
+	}
+	return res.MatchedCount, nil
+}
+
+func (conn *dbConn) BulkReplace(table string, filters []interface{}, documents []interface{}) (int64, error) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var operations []mongo.WriteModel
+
+	for i, doc := range documents {
+		m := mongo.NewReplaceOneModel()
+		m.SetFilter(filters[i])
+		m.Replacement = doc
+		operations = append(operations, m)
+	}
+
+	res, err := conn.db.Collection(table).BulkWrite(ctx, operations)
 	if err != nil {
 		return 0, err
 	}
