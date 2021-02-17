@@ -35,7 +35,7 @@ func (sc *stanClient) QueueSubscribe(listener func(msg *stan.Msg), subj string, 
 		return err
 	}
 
-	log.Printf("Listening on [%s],  qgroup=[%s] durable=[%s]\n", subj, queue, queue)
+	//	log.Printf("Listening on [%s],  qgroup=[%s] durable=[%s]\n", subj, queue, queue)
 	return nil
 }
 
