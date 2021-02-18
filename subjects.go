@@ -4,7 +4,6 @@ const (
 	SubjectChanelCreated   = "ChanelCreated"
 	SubjectChanelUpdated   = "ChanelUpdated"
 	SubjectChanelDeleted   = "ChanelDeleted"
-	SubjectItemsDeleted    = "ItemsDeleted"
-	SubjectItemsCreated    = "ItemsCreated"
+	SubjectItemsImported   = "ItemsImported"
 	SubjectQuantityUpdated = "QuantityUpdated"
 )

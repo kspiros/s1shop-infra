@@ -31,8 +31,8 @@ type IDBConn interface {
 	InsertMany(table string, documents []interface{}) ([]interface{}, error)
 	UpdateOne(table string, filter interface{}, update interface{}) (int64, error)
 	UpdateMany(table string, filter interface{}, update interface{}) (int64, error)
-	BulkReplace(table string, filters []interface{}, documents []interface{}, upsert bool) (map[int64]interface{}, error)
-	BulkUpdate(table string, filters []interface{}, documents []interface{}, upsert bool) (map[int64]interface{}, error)
+	BulkReplace(table string, filters []interface{}, documents []interface{}, upsert bool) (int64, map[int64]interface{}, error)
+	BulkUpdate(table string, filters []interface{}, documents []interface{}, upsert bool) (int64, map[int64]interface{}, error)
 	DeleteOne(table string, filter interface{}) (int64, error)
 	DeleteMany(table string, filter interface{}) (int64, error)
 	Aggregate(table string, pipeline interface{}, res interface{}) error
@@ -164,7 +164,7 @@ func (conn *dbConn) UpdateMany(table string, filter interface{}, update interfac
 	return res.MatchedCount, nil
 }
 
-func (conn *dbConn) BulkUpdate(table string, filters []interface{}, documents []interface{}, upsert bool) (map[int64]interface{}, error) {
+func (conn *dbConn) BulkUpdate(table string, filters []interface{}, documents []interface{}, upsert bool) (int64, map[int64]interface{}, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -181,12 +181,12 @@ func (conn *dbConn) BulkUpdate(table string, filters []interface{}, documents []
 
 	res, err := conn.db.Collection(table).BulkWrite(ctx, operations)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	return res.UpsertedIDs, nil
+	return res.ModifiedCount + res.UpsertedCount, res.UpsertedIDs, nil
 }
 
-func (conn *dbConn) BulkReplace(table string, filters []interface{}, documents []interface{}, upsert bool) (map[int64]interface{}, error) {
+func (conn *dbConn) BulkReplace(table string, filters []interface{}, documents []interface{}, upsert bool) (int64, map[int64]interface{}, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -203,9 +203,9 @@ func (conn *dbConn) BulkReplace(table string, filters []interface{}, documents [
 
 	res, err := conn.db.Collection(table).BulkWrite(ctx, operations)
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
-	return res.UpsertedIDs, nil
+	return res.ModifiedCount + res.UpsertedCount, res.UpsertedIDs, nil
 }
 
 func (conn *dbConn) Aggregate(table string, pipeline interface{}, res interface{}) error {

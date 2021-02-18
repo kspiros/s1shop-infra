@@ -24,9 +24,8 @@ type stanClient struct {
 }
 
 func (sc *stanClient) Publish(subj string, data []byte) error {
-	fmt.Println("publish message " + subj)
+	fmt.Printf("publish: %20v\n", subj)
 	return (*sc.con).Publish(subj, data)
-
 }
 
 func (sc *stanClient) QueueSubscribe(listener func(msg *stan.Msg), subj string, queue string) error {
