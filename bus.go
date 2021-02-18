@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -23,6 +24,7 @@ type stanClient struct {
 }
 
 func (sc *stanClient) Publish(subj string, data []byte) error {
+	fmt.Println("publish message " + subj)
 	return (*sc.con).Publish(subj, data)
 
 }
