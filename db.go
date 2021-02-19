@@ -180,10 +180,7 @@ func (conn *dbConn) BulkUpdate(table string, filters []interface{}, documents []
 	}
 
 	res, err := conn.db.Collection(table).BulkWrite(ctx, operations)
-	if err != nil {
-		return 0, nil, err
-	}
-	return res.ModifiedCount + res.UpsertedCount, res.UpsertedIDs, nil
+	return res.ModifiedCount + res.UpsertedCount, res.UpsertedIDs, err
 }
 
 func (conn *dbConn) BulkReplace(table string, filters []interface{}, documents []interface{}, upsert bool) (int64, map[int64]interface{}, error) {
@@ -202,10 +199,7 @@ func (conn *dbConn) BulkReplace(table string, filters []interface{}, documents [
 	}
 
 	res, err := conn.db.Collection(table).BulkWrite(ctx, operations)
-	if err != nil {
-		return 0, nil, err
-	}
-	return res.ModifiedCount + res.UpsertedCount, res.UpsertedIDs, nil
+	return res.ModifiedCount + res.UpsertedCount, res.UpsertedIDs, err
 }
 
 func (conn *dbConn) Aggregate(table string, pipeline interface{}, res interface{}) error {
