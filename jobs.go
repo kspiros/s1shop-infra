@@ -116,7 +116,7 @@ func CanExecJob(conf *ServerConfig, ijob IJob) (*Job, error) {
 
 	if err := conf.DB.FindOne("jobs", nil, filter, &job); err == nil {
 		if time.Now().UTC().Sub(job.UpdateDate).Minutes() < 30 {
-			return nil, err
+			return &job, errors.New("job is running")
 		}
 		job.conf = conf
 		job.setStatusFailed("Never finished")
