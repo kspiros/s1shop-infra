@@ -19,7 +19,7 @@ type logger struct {
 
 func (l *logger) Fatal(msg interface{}) {
 	fmt.Println(msg)
-	l.log.Fatal(msg)
+	l.log.Println(msg)
 }
 
 func (l *logger) Close() {
