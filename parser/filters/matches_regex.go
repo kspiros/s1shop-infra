@@ -11,7 +11,7 @@ const (
 type fMatchesRegex struct {
 }
 
-func (t *fWordCountExceeds) Execute(cvalue interface{}, value interface{}) bool {
+func (t *fMatchesRegex) Execute(cvalue interface{}, value interface{}) bool {
 	if _, ok := value.(string); !ok {
 		return false
 	}
