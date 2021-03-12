@@ -1,4 +1,4 @@
-package parser
+package xparser
 
 type IOperator interface {
 	Evaluate(condition *Condition, row *map[string]interface{}, isvalid bool) bool

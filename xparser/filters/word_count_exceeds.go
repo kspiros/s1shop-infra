@@ -2,6 +2,8 @@ package filters
 
 import (
 	"regexp"
+
+	"github.com/kspiros/xlib"
 )
 
 const (
@@ -24,7 +26,7 @@ func (t *fWordCountExceeds) Execute(cvalue interface{}, value interface{}) bool 
 	if _, ok := value.(string); !ok {
 		return false
 	}
-	v, err := checkIntValue(cvalue)
+	v, err := xlib.CheckIntValue(cvalue)
 	if err != nil {
 		return false
 	}

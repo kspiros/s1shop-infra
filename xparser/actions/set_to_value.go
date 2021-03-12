@@ -1,6 +1,8 @@
 package actions
 
-import "reflect"
+import (
+	"reflect"
+)
 
 const (
 	acSetToValue string = "set_to_value"
@@ -12,7 +14,7 @@ type SetToValue struct {
 }
 
 func (a *SetToValue) Execute(row *map[string]interface{}) {
-	(*row)[a.Field] = a.Value
+	(*row)[a.Field] = ResolveVariables(a.Value, row)
 }
 
 func init() {

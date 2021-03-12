@@ -1,5 +1,7 @@
 package filters
 
+import "github.com/kspiros/xlib"
+
 const (
 	cIsGreaterThan = "is_greater_than"
 )
@@ -8,12 +10,12 @@ type fIsGreaterThan struct {
 }
 
 func (t *fIsGreaterThan) Execute(cvalue interface{}, value interface{}) bool {
-	cv, err := checkFloatValue(cvalue)
+	cv, err := xlib.CheckFloatValue(cvalue)
 	if err != nil {
 		return false
 	}
 
-	v, err := checkFloatValue(value)
+	v, err := xlib.CheckFloatValue(value)
 	if err != nil {
 		return false
 	}

@@ -1,5 +1,7 @@
 package filters
 
+import "github.com/kspiros/xlib"
+
 const (
 	cLengthExceeds = "length_exceeds"
 )
@@ -11,7 +13,7 @@ func (t *fLengthExceeds) Execute(cvalue interface{}, value interface{}) bool {
 	if _, ok := value.(string); !ok {
 		return false
 	}
-	v, err := checkIntValue(cvalue)
+	v, err := xlib.CheckIntValue(cvalue)
 	if err != nil {
 		return false
 	}
